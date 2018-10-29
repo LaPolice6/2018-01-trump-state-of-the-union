@@ -1,0 +1,64 @@
+---
+title: "SOTU"
+author: "Alex LaPolice"
+date: "10/29/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tidyverse)
+library(stringr)
+library(tidytext)
+library(lubridate)
+```
+
+
+#Load Data
+```{r, results="hide", warning=FALSE, message=FALSE}
+# load data
+sou <- read_csv("data/sou.csv")
+presidents <- read_csv("data/presidents.csv")
+
+sou <- sou %>%
+  left_join(presidents)
+```
+
+
+#Sentiment analysis
+```{r}
+sou %>%
+  unnest_tokens(word, text)
+
+```
+
+#Sentiment
+```{r}
+
+
+# load lexicon from https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html
+bing <- get_sentiments("bing")
+
+# sentiment by address
+sentiments <- sou %>%
+  unnest_tokens(word, text) %>%
+  filter(str_detect(word, "[a-z]")) %>%
+  # match to lexicon
+  inner_join(bing, by = "word")
+
+sentiments_counts <- sentiments %>%
+  mutate(year = year(date)) %>%
+  group_by(president, party, year) %>%
+  count(sentiment) %>%
+  arrange(-n)
+
+
+```
+# cool graphic
+```{r}
+sentiments_counts %>%
+  ggplot(aes(x = year, y = n, color = party)) +
+  geom_point()
+```
+
